@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>search · paper/cut</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="page">
+  <header class="page-head">
+    <a class="logo" href="index.html"><span class="w1">paper</span><span class="slash">/</span><span class="w2">cut</span></a>
+    <form class="search" id="search" role="search">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="10.5" cy="10.5" r="7"/><path d="M16 16l5.5 5.5"/></svg>
+      <input name="q" type="search" placeholder="search..." autocomplete="off" aria-label="논문 검색">
+    </form>
+    <nav class="tabs">
+      <a href="sources.html" data-window="papercut-sources">sources</a>
+      <a href="settings.html" data-window="papercut-settings">settings</a>
+      <a href="about.html" data-window="papercut-about">about</a>
+    </nav>
+  </header>
+
+  <main class="page-body layout">
+    <section id="results" class="results" aria-live="polite"></section>
+    <aside class="panel">
+      <h2>sources</h2>
+      <ul class="src-list" id="sources"></ul>
+    </aside>
+  </main>
+
+  <script src="js/common.js"></script>
+  <script>
+    const form = document.getElementById("search");
+    bindSearch(form, { sameWindow: true });
+
+    const q = new URLSearchParams(location.search).get("q") || "";
+    form.q.value = q;
+    document.title = `${q || "search"} · paper/cut`;
+
+    const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    const settings = getSettings();
+    const resultsEl = document.getElementById("results");
+    const sourcesEl = document.getElementById("sources");
+
+    function renderSources() {
+      const list = getSources();
+      sourcesEl.innerHTML = list.length
+        ? list.map((s, i) => `<li><span>${esc(s)}</span><button data-i="${i}" aria-label="소스에서 제거">×</button></li>`).join("")
+        : `<li class="src-empty">→ 버튼으로 논문을 소스에 추가해 보세요.</li>`;
+    }
+    sourcesEl.addEventListener("click", (e) => {
+      const b = e.target.closest("button");
+      if (!b) return;
+      const list = getSources();
+      list.splice(+b.dataset.i, 1);
+      setSources(list);
+      renderSources();
+    });
+
+    function search(query) {
+      const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+      let hits = PAPERS
+        .map((p) => {
+          const hay = (p.title + " " + p.authors + " " + p.summary).toLowerCase();
+          return { p, score: words.reduce((n, w) => n + (hay.includes(w) ? 1 : 0), 0) };
+        })
+        .filter((h) => h.score > 0);
+      if (settings.sort === "date") {
+        const t = (d) => { const [m, day, y] = d.split("/"); return new Date(2000 + +y, m - 1, day).getTime(); };
+        hits.sort((a, b) => t(b.p.date) - t(a.p.date));
+      } else {
+        hits.sort((a, b) => b.score - a.score);
+      }
+      return hits.slice(0, settings.count).map((h) => h.p);
+    }
+
+    function renderResults(list) {
+      if (!list.length) {
+        resultsEl.innerHTML = `<div class="empty">“${esc(q)}”에 대한 논문을 찾지 못했어요.<br>다른 키워드로 검색해 보세요.</div>`;
+        return;
+      }
+      resultsEl.innerHTML = list.map((p, i) => `
+        <article class="result" data-i="${i}">
+          <button class="act del" aria-label="결과 숨기기"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 5l14 14M19 5L5 19"/></svg></button>
+          <h3>${esc(p.title)}</h3>
+          <div class="meta">${p.date} – ${esc(p.authors)}</div>
+          ${settings.summaries ? `<p>Summary: ${esc(p.summary)}</p>` : ""}
+          <button class="act add" aria-label="소스에 추가"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 12h15M13 5l7 7-7 7"/></svg></button>
+        </article>`).join("");
+
+      resultsEl.onclick = (e) => {
+        const btn = e.target.closest(".act");
+        if (!btn) return;
+        const card = btn.closest(".result");
+        const paper = list[+card.dataset.i];
+        if (btn.classList.contains("add")) {
+          const src = getSources();
+          if (!src.includes(paper.title)) { src.push(paper.title); setSources(src); renderSources(); }
+        }
+        card.classList.add("gone");
+        setTimeout(() => card.remove(), 350);
+      };
+    }
+
+    renderSources();
+    if (q) {
+      resultsEl.innerHTML = `<div class="loader-wrap"><div class="loader"><i></i><i></i></div></div>`;
+      setTimeout(() => renderResults(search(q)), 1100);
+    } else {
+      resultsEl.innerHTML = `<div class="empty">검색어를 입력해 주세요.</div>`;
+      form.q.focus();
+    }
+  </script>
+</body>
+</html>

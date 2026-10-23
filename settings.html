@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>settings · paper/cut</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="page">
+  <header class="page-head">
+    <a class="logo" href="index.html"><span class="w1">paper</span><span class="slash">/</span><span class="w2">cut</span></a>
+    <form class="search" id="search" role="search">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="10.5" cy="10.5" r="7"/><path d="M16 16l5.5 5.5"/></svg>
+      <input name="q" type="search" placeholder="search..." autocomplete="off" aria-label="논문 검색">
+    </form>
+    <nav class="tabs">
+      <a href="sources.html" data-window="papercut-sources">sources</a>
+      <a class="on" href="settings.html">settings</a>
+      <a href="about.html" data-window="papercut-about">about</a>
+    </nav>
+  </header>
+
+  <main class="page-body">
+    <div class="settings">
+      <div class="setting">
+        <div><h3>AI 요약 보기</h3><p>검색 결과에 논문 요약을 함께 표시합니다.</p></div>
+        <label class="switch"><input type="checkbox" id="summaries"><span></span></label>
+      </div>
+      <div class="setting">
+        <div><h3>결과 개수</h3><p>한 번에 보여줄 논문 수</p></div>
+        <div class="seg" data-key="count">
+          <button data-v="5">5</button><button data-v="10">10</button><button data-v="20">20</button>
+        </div>
+      </div>
+      <div class="setting">
+        <div><h3>정렬</h3><p>관련도 또는 최신순</p></div>
+        <div class="seg" data-key="sort">
+          <button data-v="relevance">관련도</button><button data-v="date">최신순</button>
+        </div>
+      </div>
+      <div class="setting">
+        <div><h3>초기화</h3><p>설정과 소스 목록을 기본값으로 되돌립니다.</p></div>
+        <div class="seg"><button id="reset">초기화</button></div>
+      </div>
+    </div>
+  </main>
+  <div class="toast" id="toast">저장됨</div>
+
+  <script src="js/common.js"></script>
+  <script>
+    bindSearch(document.getElementById("search"));
+
+    const toast = document.getElementById("toast");
+    let timer;
+    function saved(msg = "저장됨") {
+      toast.textContent = msg;
+      toast.classList.add("show");
+      clearTimeout(timer);
+      timer = setTimeout(() => toast.classList.remove("show"), 1400);
+    }
+    function save(patch) {
+      store.set("settings", { ...getSettings(), ...patch });
+      render();
+      saved();
+    }
+    function render() {
+      const s = getSettings();
+      document.getElementById("summaries").checked = s.summaries;
+      document.querySelectorAll(".seg[data-key]").forEach((seg) => {
+        seg.querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.v === String(s[seg.dataset.key])));
+      });
+    }
+
+    document.getElementById("summaries").addEventListener("change", (e) => save({ summaries: e.target.checked }));
+    document.querySelectorAll(".seg[data-key]").forEach((seg) => seg.addEventListener("click", (e) => {
+      const b = e.target.closest("button");
+      if (!b) return;
+      const key = seg.dataset.key;
+      save({ [key]: key === "count" ? +b.dataset.v : b.dataset.v });
+    }));
+    document.getElementById("reset").addEventListener("click", () => {
+      store.set("settings", DEFAULT_SETTINGS);
+      setSources(DEFAULT_SOURCES);
+      render();
+      saved("기본값으로 초기화했어요");
+    });
+    render();
+  </script>
+</body>
+</html>

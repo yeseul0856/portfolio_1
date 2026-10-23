@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>paper/cut</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <header class="stage-header">
+      <div>
+        <a class="back" href="about.html" data-window="papercut-about"
+          >← projects</a
+        >
+        <h1>yeseul portfolio</h1>
+        <p>The warmth of analog, the power of digital.</p>
+        <!-- <p>아날로그의 따뜻함, 디지털의 힘</p> -->
+      </div>
+      <nav>
+        <a href="about.html" data-window="papercut-about">site ↗</a>
+        <a href="https://github.com" target="_blank" rel="noopener">github ↗</a>
+      </nav>
+    </header>
+
+    <nav class="bookmarks" aria-label="섹션 이동">
+      <a href="#main" class="on"><span>main</span></a>
+      <a href="#search"><span>search</span></a>
+      <a href="#sources"><span>sources</span></a>
+    </nav>
+
+    <main class="stack">
+      <!-- 1: 메인 -->
+      <article class="slide slide-hero" id="main">
+        <div class="logo">
+          <span class="w1">analog</span><span class="slash">/</span
+          ><span class="w2">technology</span>
+        </div>
+        <form class="search" id="hero-search" role="search">
+          <svg
+            width="28"
+            height="28"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+          >
+            <circle cx="10.5" cy="10.5" r="7" />
+            <path d="M16 16l5.5 5.5" />
+          </svg>
+          <input
+            name="q"
+            type="search"
+            placeholder="search..."
+            autocomplete="off"
+            aria-label="논문 검색"
+          />
+        </form>
+        <div class="hero-foot">
+          <strong>Enter a command.</strong>
+          <nav class="menu">
+            <a href="sources.html" data-window="papercut-sources">sources</a>
+            <a href="settings.html" data-window="papercut-settings">settings</a>
+            <a href="about.html" data-window="papercut-about">about</a>
+          </nav>
+        </div>
+      </article>
+
+      <!-- 2: 검색 결과 미리보기 -->
+      <article
+        class="slide link"
+        id="search"
+        data-href="search.html?q=machine%20learning"
+        data-window="papercut-search"
+      >
+        <div class="mini">
+          <!-- <div class="mini-top">
+          <div class="logo"><span class="w1">paper</span><span class="slash">/</span><span class="w2">cut</span></div>
+          <div class="search">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="10.5" cy="10.5" r="7"/><path d="M16 16l5.5 5.5"/></svg>
+            <span>machine learning</span>
+          </div>
+        </div> -->
+          <div class="mini-body">
+            <div id="mini-results"></div>
+            <div class="mini-col">
+              <h4 style="margin: 0 0 0.8em; font-size: 1.3em">sources</h4>
+              <div id="mini-results-src"></div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- 3: sources 미리보기 -->
+      <article
+        class="slide link"
+        id="sources"
+        data-href="sources.html"
+        data-window="papercut-sources"
+      >
+        <div class="mini">
+          <div class="mini-top">
+            <div class="logo">
+              <span class="w1">paper</span><span class="slash">/</span
+              ><span class="w2">cut</span>
+            </div>
+            <div class="search"><span>sources</span></div>
+          </div>
+          <div class="mini-body">
+            <div class="mini-col" id="mini-sources"></div>
+            <div class="mini-col">
+              <h4 style="margin: 0 0 0.8em">tip</h4>
+              <p style="margin: 0; line-height: 1.5">
+                Pin the papers you trust. paper/cut ranks new results against
+                your sources.
+              </p>
+            </div>
+          </div>
+        </div>
+      </article>
+    </main>
+
+    <p class="blurb">
+      Finding relevant sources to an investigation is a repetitive and
+      surprisingly difficult task.
+      <b>paper/cut</b> reads the abstracts for you, summarizes them in plain
+      language, and keeps the papers you trust close at hand.
+    </p>
+
+    <script src="js/common.js"></script>
+    <script>
+      bindSearch(document.getElementById("hero-search"));
+
+      // 미리보기 내용 채우기
+      const esc = (s) =>
+        s.replace(
+          /[&<>"]/g,
+          (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c],
+        );
+      const srcHtml = getSources()
+        .map((s) => `<p style="margin:0 0 1em;line-height:1.45">${esc(s)}</p>`)
+        .join("");
+      document.getElementById("mini-sources").innerHTML =
+        `<h4 style="margin:0 0 .8em;font-size:1.3em">sources</h4>` + srcHtml;
+      document.getElementById("mini-results-src").innerHTML = srcHtml;
+      document.getElementById("mini-results").innerHTML = PAPERS.slice(0, 4)
+        .map(
+          (p) => `
+      <div class="mini-card"><h4>${esc(p.title)}</h4><p class="meta">${p.date} – ${esc(p.authors)}</p><p>Summary: ${esc(p.summary)}</p></div>`,
+        )
+        .join("");
+
+      // 북마크: 부드럽게 이동 + 현재 위치 표시
+      const marks = [...document.querySelectorAll(".bookmarks a")];
+      const panels = marks.map((a) =>
+        document.querySelector(a.getAttribute("href")),
+      );
+      marks.forEach((a, i) =>
+        a.addEventListener("click", (e) => {
+          e.preventDefault();
+          panels[i].scrollIntoView({ behavior: "smooth", block: "center" });
+          history.replaceState(null, "", a.getAttribute("href"));
+        }),
+      );
+      panels.forEach((p) => {
+        new IntersectionObserver(
+          (entries) => {
+            if (entries[0].isIntersecting)
+              marks.forEach((m, i) =>
+                m.classList.toggle("on", panels[i] === p),
+              );
+          },
+          { rootMargin: "-45% 0px -45% 0px" },
+        ).observe(p);
+      });
+
+      // 미리보기 패널 클릭 시 새 창
+      document
+        .querySelectorAll(".slide.link")
+        .forEach((s) =>
+          s.addEventListener("click", () =>
+            openWindow(s.dataset.href, s.dataset.window),
+          ),
+        );
+    </script>
+  </body>
+</html>

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>sources · paper/cut</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="page">
+  <header class="page-head">
+    <a class="logo" href="index.html"><span class="w1">paper</span><span class="slash">/</span><span class="w2">cut</span></a>
+    <form class="search" id="search" role="search">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="10.5" cy="10.5" r="7"/><path d="M16 16l5.5 5.5"/></svg>
+      <input name="q" type="search" placeholder="search..." autocomplete="off" aria-label="논문 검색">
+    </form>
+    <nav class="tabs">
+      <a class="on" href="sources.html">sources</a>
+      <a href="settings.html" data-window="papercut-settings">settings</a>
+      <a href="about.html" data-window="papercut-about">about</a>
+    </nav>
+  </header>
+
+  <main class="page-body layout">
+    <section>
+      <div class="panel">
+        <h2>my sources</h2>
+        <ul class="src-list" id="sources"></ul>
+      </div>
+      <form class="search" id="add" style="margin-top:16px">
+        <span style="font-size:24px;line-height:1">+</span>
+        <input name="title" placeholder="논문 제목을 직접 추가..." autocomplete="off" aria-label="소스 추가">
+      </form>
+    </section>
+    <aside class="panel">
+      <h2>sources란?</h2>
+      <p style="margin:0 0 14px;line-height:1.6">조사의 기준이 되는 논문 목록이에요. 검색 결과에서 <b>→</b>를 누르면 여기에 추가되고, <b>×</b>로 뺄 수 있어요.</p>
+      <p style="margin:0;line-height:1.6;color:var(--muted)">목록은 이 브라우저에 저장됩니다.</p>
+    </aside>
+  </main>
+
+  <script src="js/common.js"></script>
+  <script>
+    bindSearch(document.getElementById("search"));
+
+    const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    const el = document.getElementById("sources");
+
+    function render() {
+      const list = getSources();
+      el.innerHTML = list.length
+        ? list.map((s, i) => `<li><span>${esc(s)}</span><button data-i="${i}" aria-label="제거">×</button></li>`).join("")
+        : `<li class="src-empty">아직 소스가 없어요.</li>`;
+    }
+    el.addEventListener("click", (e) => {
+      const b = e.target.closest("button");
+      if (!b) return;
+      const list = getSources();
+      list.splice(+b.dataset.i, 1);
+      setSources(list);
+      render();
+    });
+    document.getElementById("add").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const t = e.target.title.value.trim();
+      if (!t) return;
+      const list = getSources();
+      if (!list.includes(t)) list.push(t);
+      setSources(list);
+      e.target.reset();
+      render();
+    });
+    // 다른 창에서 소스가 바뀌면 바로 반영
+    addEventListener("storage", render);
+    render();
+  </script>
+</body>
+</html>
